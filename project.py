@@ -8,8 +8,8 @@ class Project:
 		self.tests = []
 
 		# Too long to put in the __init__ arguments.
-		if not Mutants:
-			mutants = {
+		if not mutants:
+			self.mutants = {
 				"ASK": True,
 				"ASTK": True,
 				"EAN": True,
@@ -36,6 +36,8 @@ class Project:
 				"SKCR": True,
 				"SPCR": True
 			}
+		else:
+			self.mutants = mutants
 	
 	def source_files(self):
 		"""
