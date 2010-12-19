@@ -1,49 +1,18 @@
+import json
+
 from os import walk, sep
 from os.path import join, splitext, relpath, pathsep
 
 class Project:
-	def __init__(self, source_path, test_path, mutants=None):
-		self.source_path = source_path
-		self.test_path = test_path
-		self.tests = []
+	def __init__(self, settings_path):
+		with open(settings_path, "r", encoding="utf-8") as settings_file:
+			self.settings = json.load(settings_file)
 
-		# Too long to put in the __init__ arguments.
-		if not mutants:
-			self.mutants = {
-				"ASK": True,
-				"ASTK": True,
-				"EAN": True,
-				"EELO": True,
-				"ELPA": True,
-				"ESP": True,
-				"EXCR": True,
-				"MBR": True,
-				"MSF": True,
-				"MSP": True,
-				"MXC": True,
-				"MXT": True,
-				"RCXC": True,
-				"RFU": True,
-				"RJS": True,
-				"RNA": True,
-				"RSB": True,
-				"RSK": True,
-				"RSTK": True,
-				"RTXC": True,
-				"RVK": True,
-				"RXO": True,
-				"SHCR": True,
-				"SKCR": True,
-				"SPCR": True
-			}
-		else:
-			self.mutants = mutants
-	
 	def source_files(self):
 		"""
 		Finds all source files ending in .java.
 		"""
-		for (dirpath, dirnames, filenames) in walk(self.source_path):
+		for (dirpath, dirnames, filenames) in walk(self.settings["source_path"]):
 			for filename in filenames:
 				if splitext(filename)[-1] == ".java":
 					print(join(dirpath, filename))
@@ -56,7 +25,7 @@ class Project:
 		"""
 		self.tests = []
 
-		for (dirpath, dirnames, filenames) in walk(self.test_path):
+		for (dirpath, dirnames, filenames) in walk(self.settings["test_path"]):
 			for filename in filenames:
 				split = splitext(filename)
 
@@ -65,7 +34,7 @@ class Project:
 
 					if "$" in abs_path: continue
 
-					rel_path = abs_path.replace(self.test_path, "")
+					rel_path = abs_path.replace(self.settings["test_path"], "")
 					test_name = rel_path.replace(sep, ".")
 
 					if test_name in self.tests: continue
@@ -73,7 +42,7 @@ class Project:
 					yield(test_name)
 
 if __name__ == "__main__":
-	p = Project("/home/rdrake/workspace/junit/src/main/java/", "/home/rdrake/workspace/junit/target/test/java/")
+	p = Project("junit.settings")
 	
 	for test_name in p.test_names():
 		print(test_name)
