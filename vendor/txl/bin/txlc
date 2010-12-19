@@ -12,7 +12,7 @@ then
 fi
 
 # Localization
-CC="gcc -m32"
+CC="gcc -m64"
 
 # Decode TXL program name and options
 TXLPROG=""
