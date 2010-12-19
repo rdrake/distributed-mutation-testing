@@ -11,7 +11,7 @@ def mkdir_p(path):
 	try:
 		os.makedirs(path)
 	except OSError as exc:
-		if exc.errn == errno.EEXIST:
+		if exc.errno == errno.EEXIST:
 			pass
 		else: raise
 
@@ -37,10 +37,10 @@ def diff(fst_file, snd_file):
 	#return [str(x) for x in p.stdout.readlines()]
 
 def patch(patch_file):
-	return _patch(patch_file, ["patch", "-p0"])
+	return _patch(patch_file, ["patch", "-p1"])
 
 def reverse_patch(patch_file):
-	return _patch(patch_file, ["patch", "-R", "-p0"])
+	return _patch(patch_file, ["patch", "-R", "-p1"])
 
 def _patch(patch_file, args):
 	"""

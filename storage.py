@@ -12,7 +12,7 @@ class FileStore:
 		database with the operator name used to create the file, and the
 		original file name of the mutant's ancestor.
 		"""
-		return self.fs.put(f, metadata={ 'op': op, 'file_name': fname })
+		return self.fs.put(f, op=op, file_name=fname) #metadata={ 'op': op, 'file_name': fname })
 	
 	def get(self, id):
 		"""
