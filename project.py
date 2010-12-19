@@ -1,12 +1,13 @@
-import json
-
-from os import walk, sep
-from os.path import join, splitext, relpath, pathsep
+from json import load
+from os import sep, walk
+from os.path import basename, join, splitext, relpath
 
 class Project:
 	def __init__(self, settings_path):
+		self.name = basename(settings_path)
+
 		with open(settings_path, "r", encoding="utf-8") as settings_file:
-			self.settings = json.load(settings_file)
+			self.settings = load(settings_file)
 
 	def source_files(self):
 		"""
@@ -15,7 +16,7 @@ class Project:
 		for (dirpath, dirnames, filenames) in walk(self.settings["source_path"]):
 			for filename in filenames:
 				if splitext(filename)[-1] == ".java":
-					print(join(dirpath, filename))
+					yield(join(dirpath, filename).replace(self.settings["source_path"], ""))
 	
 	def test_names(self):
 		"""
@@ -32,6 +33,7 @@ class Project:
 				if split[-1] == ".class":
 					abs_path = join(dirpath, split[0])
 
+					# Remove inner classes from the list of tests.
 					if "$" in abs_path: continue
 
 					rel_path = abs_path.replace(self.settings["test_path"], "")
@@ -46,3 +48,6 @@ if __name__ == "__main__":
 	
 	for test_name in p.test_names():
 		print(test_name)
+	
+	for source_file in p.source_files():
+		print(source_file)
