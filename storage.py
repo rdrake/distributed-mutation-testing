@@ -19,9 +19,3 @@ class FileStore:
 		Retrieves a file given the unique identifier id.
 		"""
 		return self.fs.get(id)
-
-if __name__ == '__main__':
-	f = open("/home/rdrake/.bashrc", 'rb')
-	s = FileStore('dmut')
-	id = s.put(f, 'SUT', 'Account.java')
-	print(s.get(id))
