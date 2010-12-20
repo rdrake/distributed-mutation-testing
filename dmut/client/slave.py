@@ -2,7 +2,7 @@ from json import loads
 from os import chdir, getcwd
 from os.path import join
 from shutil import rmtree
-from subprocess import Popen
+from subprocess import Popen, PIPE
 from urllib.request import urlopen
 from uuid import uuid1
 from zipfile import ZipFile
@@ -25,15 +25,27 @@ class Slave:
 		log("Waiting for work.")
 	
 	def test(self, id):
+		"""
+		Performs the testing of a particular mutant.
+
+		Returns True if all tests pass, False if one fails.
+		"""
+		status = True
 		test = self.fs.get(id)
+		patch_file = test.read()
 		log("Retrieved patch.")
 		log("Executing operator %s on file %s." % (test.op, test.file_name))
 		
-		self._setup(test.read())
+		self._setup(patch_file)
 
-		#
+		for test_name in self.settings["tests"]:
+			if not self._run_test_case(test_name):
+				print("%s failed." % test_name)
+				status = False
+				break
 
-		self._teardown()
+		self._teardown(patch_file)
+		return status
 
 	def _setup(self, patch_file):
 		"""
@@ -53,11 +65,22 @@ class Slave:
 		else:
 			raise Exception()
 	
-	def _teardown(self):
+	def _run_test_case(self, test_name):
+		"""
+		Runs the specified test case on the current copy of the code.
+		
+		Returns True on success and False on failure.
+		"""
+		return Popen(["java", "-cp", self.settings["paths"]["classpath"], self.settings["commands"]["test"], test_name], stdin=PIPE, stdout=PIPE, stderr=PIPE).wait() == 0
+	
+	def _teardown(self, patch_file):
 		"""
 		Reverses patch.
 		"""
-		pass
+		chdir(join(self.work_dir, self.settings["source"]["dir"]))
+		reverse_patch(patch_file)
+		chdir(self.work_dir)
+		log("Reversed patch.")
 	
 	def _init(self):
 		mkdir_p(self.work_dir)
@@ -105,6 +128,6 @@ class Slave:
 if __name__ == "__main__":
 	if len(sys.argv) == 2:
 		s = Slave(sys.argv[1])
-		s.test("4d0ea73bf7af9905e3000026")
+		s.test("4d0eb50bf7af9916ed000026")
 	else:
 		raise ValueError("Usage:  %s %s <hostname>" % (sys.executable, sys.argv[0]))
