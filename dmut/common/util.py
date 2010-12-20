@@ -3,6 +3,7 @@ import os, errno
 from os import walk
 from os.path import join
 from subprocess import Popen, PIPE
+from time import strftime
 from zipfile import ZipFile, ZIP_DEFLATED
 
 # Shamelessly stolen from SO:
@@ -48,6 +49,9 @@ def _patch(patch_file, args):
 	"""
 	p = Popen(args, stdin=PIPE, stdout=PIPE)
 	return p.communicate(input=patch_file)[1] is None
+
+def log(status):
+	print("[%s] %s" % (strftime("%Y-%m-%d @ %H:%M:%S"), status))
 
 if __name__ == "__main__":
 	print(patch(diff("junit/framework/TestResult.java.a", "junit/framework/TestResult.java.b")))
