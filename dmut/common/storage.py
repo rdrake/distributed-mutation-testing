@@ -14,14 +14,33 @@ class FileStore:
 		database with the operator name used to create the file, and the
 		original file name of the mutant's ancestor.
 		"""
-		return self.fs.put(f, op=op, file_name=fname, killed=False)
+		return self.fs.put(f, op=op, file_name=fname, killed=False, built=True)
 	
 	def get(self, id):
-		# Seemlessly handle string IDs.
-		if isinstance(id, str):
-			id = ObjectId(id)
-
 		"""
 		Retrieves a file given the unique identifier id.
 		"""
-		return self.fs.get(id)
+		return self.fs.get(self._str_to_objid(id))
+	
+	def killed(self, id):
+		"""
+		Flag a mutant as having been killed.
+		"""
+		self.db.fs.files.update({ "_id": self._str_to_objid(id) }, { "$set": { "killed": True } })
+
+	def build_error(self, id):
+		"""
+		Flag a mutant as causing a build error and thus being invalid.
+		"""
+		self.db.fs.files.update({ "_id": self._str_to_objid(id) }, { "$set": { "built": False } })
+
+	def _str_to_objid(self, id):
+		"""
+		If necessary, converts string to ObjectId for querying.
+		"""
+		if isinstance(id, str):
+			return ObjectId(id)
+		elif isinstance(id, ObjectId):
+			return id
+		else:
+			raise ValueError("Can't convert to ObjectId!")

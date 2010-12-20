@@ -1,6 +1,6 @@
 from json import loads
 from os import chdir, getcwd
-from os.path import join
+from os.path import exists, join
 from shutil import rmtree
 from subprocess import Popen, PIPE
 from urllib.request import urlopen
@@ -18,6 +18,7 @@ class Slave:
 	def __init__(self, hostname):
 		self.name = str(uuid1())
 		self.hostname = hostname
+		self.download_dir = "/tmp/dmut"
 		self.work_dir = "/tmp/%s" % self.name
 
 		self._init()
@@ -33,8 +34,9 @@ class Slave:
 
 		Returns True if all tests pass, False if one fails.
 		"""
+		self.id = id
 		status = True
-		test = self.fs.get(id)
+		test = self.fs.get(self.id)
 		patch_file = test.read()
 		log("Retrieved patch.")
 		log("Executing operator %s on file %s." % (test.op, test.file_name))
@@ -43,17 +45,27 @@ class Slave:
 
 		for test_name in self.settings["tests"]:
 			if not self._run_test_case(test_name):
-				print("%s failed." % test_name)
+				log("%s failed." % test_name)
 				status = False
 				break
 
-		self._teardown(patch_file)
-		return status
+		self._teardown()
+		
+		if not status:
+			self.fs.killed(self.id)
 
 	def _setup(self, patch_file):
 		"""
 		Cleans up, applies patch.
 		"""
+		z = ZipFile(self.source_path)
+		z.extractall(self.work_dir)
+		log("Extracted source file.")
+
+		for cmd in self.settings["commands"]["preprocess"]:
+			self._exec_command_quiet(cmd)
+		log("Executed pre-processing commands.")
+
 		self._clean()
 		log("Cleaned working directory.")
 
@@ -66,6 +78,7 @@ class Slave:
 		if self._exec_command_quiet(self.settings["commands"]["build"]):
 			log("Built current code.")
 		else:
+			self.fs.build_error(self.id)
 			raise Exception()
 	
 	def _run_test_case(self, test_name):
@@ -76,18 +89,16 @@ class Slave:
 		"""
 		return Popen(["java", "-cp", self.settings["paths"]["classpath"], self.settings["commands"]["test"], test_name], stdin=PIPE, stdout=PIPE, stderr=PIPE).wait() == 0
 	
-	def _teardown(self, patch_file):
+	def _teardown(self):
 		"""
-		Reverses patch.
+		Removes old mutated code.
 		"""
-		chdir(join(self.work_dir, self.settings["source"]["dir"]))
-		reverse_patch(patch_file)
-		chdir(self.work_dir)
-		log("Reversed patch.")
+		rmtree(join(self.work_dir, "*"), True)
+		log("Removed working directory.")
 	
 	def _init(self):
+		mkdir_p(self.download_dir)
 		mkdir_p(self.work_dir)
-		log("Created working directory.")
 
 		# Load settings from the specified hostname.
 		u = urlopen("http://%s/client.settings" % self.hostname)
@@ -97,21 +108,16 @@ class Slave:
 		self.fs = FileStore(self.settings["database"]["name"])
 		log("Initialized storage.")
 
-		u = urlopen(self.settings["source"]["location"])
-		f = open(self.settings["source"]["name"], "wb")
-		f.write(u.read())
-		log("Downloaded source file.")
+		self.source_path = join(self.download_dir, self.settings["source"]["name"])
 
-		z = ZipFile(self.settings["source"]["name"])
-		z.extractall(self.work_dir)
-		log("Extracted source file.")
+		if not exists(self.source_path):
+			u = urlopen(self.settings["source"]["location"])
+			f = open(self.source_path, "wb")
+			f.write(u.read())
+			log("Downloaded source file.")
 
 		chdir(self.work_dir)
 		log("Moved into work directory.")
-
-		for cmd in self.settings["commands"]["preprocess"]:
-			self._exec_command_quiet(cmd)
-		log("Executed pre-processing commands.")
 
 	def _exec_command_quiet(self, cmd):
 		p = Popen(cmd, stdout=open("/dev/null"), shell=True)
