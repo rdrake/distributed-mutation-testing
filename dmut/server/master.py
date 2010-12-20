@@ -29,7 +29,9 @@ def get():
 		return q.get()
 	except Empty:
 		log("Completed in %.02f." % (time() - start))
-		return None
+		sys.exit(1)
+	
+	return None
 
 if __name__ == "__main__":
 	server = SimpleXMLRPCServer(("", 8000))
