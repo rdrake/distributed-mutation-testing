@@ -18,7 +18,9 @@ Several servers must be started before clients can perform any work.
 
 ## Starting Clients
 Clients can easily be started by starting the slave script.
+
 `python dmut/client/slave.py localhost:8001 localhost:8000`
 
 Alternatively, one can use the provided BASH script to spawn 4 clients.
+
 `./spawn.sh`
