@@ -5,7 +5,7 @@
 
 # Quick Start
 ## Starting Servers
-Several servers mut be started.
+Several servers must be started before clients can perform any work.
 
 ### MongoDB
 `vendor/mongodb/mongod --dbpath=/path/to/data/dir`
