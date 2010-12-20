@@ -16,7 +16,7 @@ from dmut.common.util import log, mkdir_p, patch, reverse_patch
 
 class Slave:
 	def __init__(self, hostname):
-		self.name = "61c3782c-0bd5-11e0-8872-1cc1de5b973e"#str(uuid1())
+		self.name = str(uuid1())
 		self.hostname = hostname
 		self.work_dir = "/tmp/%s" % self.name
 
@@ -24,6 +24,9 @@ class Slave:
 
 		log("Waiting for work.")
 	
+	def __enter__(self):
+		return self
+
 	def test(self, id):
 		"""
 		Performs the testing of a particular mutant.
@@ -120,14 +123,35 @@ class Slave:
 		else:
 			raise Exception()
 	
-	def __del__(self):
-		#rmtree(self.work_dir)
-		pass
-		#log("Removed working directory.")
+	def __exit__(self, type, value, traceback):
+		"""
+		Remove the working directory completely.  Ignore any warnings about
+		it still containing files.
+		"""
+		rmtree(self.work_dir, True)
+		log("Removed working directory.")
 
 if __name__ == "__main__":
-	if len(sys.argv) == 2:
-		s = Slave(sys.argv[1])
-		s.test("4d0eb50bf7af9916ed000026")
+	from xmlrpc.client import ServerProxy
+
+	if len(sys.argv) == 3:
+		http_hostname = sys.argv[1]
+		master_hostname = sys.argv[2]
+
+		master = ServerProxy("http://%s" % master_hostname)
+
+		with Slave(http_hostname) as s:
+			while True:
+				id = master.get()
+				
+				if not id:
+					log("No more work.  Terminating.")
+					break
+
+				try:
+					s.test(id)
+				except:
+					log("*** ERROR ***:  Something went wrong with the test.")
+		
 	else:
-		raise ValueError("Usage:  %s %s <hostname>" % (sys.executable, sys.argv[0]))
+		raise ValueError("Usage:  %s %s <http hostname> <master hostname>" % (sys.executable, sys.argv[0]))

@@ -13,7 +13,7 @@
 	"commands":
 		{
 			"clean":"ant clean",
-			"build":"ant",
+			"build":"ant build",
 			"test":"org.junit.runner.JUnitCore",
 			"preprocess":
 				[
