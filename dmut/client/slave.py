@@ -1,10 +1,13 @@
+from concurrent.futures import ProcessPoolExecutor
 from json import loads
 from os import chdir, getcwd
 from os.path import exists, join
 from shutil import rmtree
 from subprocess import Popen, PIPE
+from time import time
 from urllib.request import urlopen
 from uuid import uuid1
+from xmlrpc.client import ServerProxy
 from zipfile import ZipFile
 
 import sys
@@ -137,27 +140,24 @@ class Slave:
 		rmtree(self.work_dir, True)
 		log("Removed working directory.")
 
-if __name__ == "__main__":
-	from xmlrpc.client import ServerProxy
+if len(sys.argv) != 3:
+	raise ValueError("Usage:  %s %s <http hostname> <master hostname>" % (sys.executable, sys.argv[0]))
 
-	if len(sys.argv) == 3:
-		http_hostname = sys.argv[1]
-		master_hostname = sys.argv[2]
+http_hostname = sys.argv[1]
+master_hostname = sys.argv[2]
 
-		master = ServerProxy("http://%s" % master_hostname)
+master = ServerProxy("http://%s" % master_hostname)
 
-		with Slave(http_hostname) as s:
-			while True:
-				id = master.get()
-				
-				if not id:
-					log("No more work.  Terminating.")
-					break
+with Slave(http_hostname) as s:
+	while True:
+		id = master.get()
+			
+		if not id:
+			log("No more work.  Terminating.")
+			break
 
-				try:
-					s.test(id)
-				except:
-					log("*** ERROR ***:  Something went wrong with the test.")
-		
-	else:
-		raise ValueError("Usage:  %s %s <http hostname> <master hostname>" % (sys.executable, sys.argv[0]))
+		try:
+			s.test(id)
+		except:
+			log("*** ERROR ***:  Something went wrong with the test.")
+
