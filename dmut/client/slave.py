@@ -9,7 +9,7 @@ from zipfile import ZipFile
 
 import sys
 
-sys.path.append(getcwd() + "/distributed-mutation-testing")
+sys.path.append(getcwd())
 
 from dmut.common.storage import FileStore
 from dmut.common.util import log, mkdir_p, patch, reverse_patch
